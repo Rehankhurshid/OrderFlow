@@ -1,0 +1,80 @@
+Here's the refined version with department-based roles and access control:
+
+## Delivery Order Management System - Product Requirements
+
+### Overview
+A role-based system for creating and routing delivery orders (DO) through a defined workflow, where each department has specific permissions and can only perform their designated functions.
+
+### Department Structure & Roles
+
+**1. Document Creation Department**
+- **Role:** Paper Creator
+- **Access:** Can only create new DOs and submit to Project Office
+- **Restrictions:** Cannot view or modify documents after submission
+
+**2. Project Office Department**
+- **Role:** Project Office Staff
+- **Access:** Can only view and process DOs received from Paper Creator
+- **Actions Allowed:** 
+  - Receive from Paper Creator
+  - Review and validate
+  - Dispatch to Area Office
+- **Restrictions:** Cannot create new DOs or access documents outside their stage
+
+**3. Area Office Department**
+- **Role:** Area Office Staff  
+- **Access:** Can only view and process DOs received from Project Office
+- **Actions Allowed:**
+  - Receive from Project Office
+  - Process area-specific requirements
+  - Dispatch to Road Sale Office
+- **Restrictions:** Cannot access documents before or after their stage
+
+**4. Road Sale Department**
+- **Role:** Road Sale Staff
+- **Access:** Can only view and process DOs received from Area Office
+- **Actions Allowed:**
+  - Receive from Area Office
+  - Execute final delivery/sale
+  - Mark as completed
+- **Restrictions:** Cannot dispatch to other departments
+
+**5. System Administration**
+- **Role:** Role Creator
+- **Access:** Manage user roles and department assignments
+- **Restrictions:** Cannot create or modify DOs
+
+### Document Workflow
+```
+Paper Creator → Project Office → Area Office → Road Sale Office
+```
+
+### Access Control Rules
+1. **Department Isolation:** Each department can only see documents currently at their stage
+2. **Action Restrictions:** Users can only perform actions specific to their department role
+3. **No Backward Access:** Departments cannot view or modify documents from previous stages
+4. **No Forward Access:** Departments cannot view documents that haven't reached them yet
+
+### Document Structure
+Each Delivery Order contains:
+- **DO Number** - Unique identifier
+- **Party Name** - Customer name (linked to fixed party number)
+- **Validity Period** - Active date range
+- **Authorized Person** - Person authorized to act on this DO
+- **DO Validity Status** - Current status
+- **Current Location** - Which department currently holds the document
+- **Workflow History** - Audit trail of department transfers
+
+### Consumer Portal
+**Separate Access for Parties/Consumers:**
+- Can search by DO Number
+- View their DO details and current status
+- See which department currently has their document
+- Cannot modify or route documents
+
+### Key Security Requirements
+1. Role-based access control (RBAC) enforcement
+2. Department-level data isolation
+3. Audit trail for all document movements
+4. Session management to prevent unauthorized access
+5. Each user can only log in to their assigned department's interface
