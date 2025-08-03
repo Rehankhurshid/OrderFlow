@@ -16,9 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Users, UserPlus } from "lucide-react";
 import { z } from "zod";
 
-const createUserSchema = insertUserSchema.extend({
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
+const createUserSchema = insertUserSchema.omit({ password: true });
 
 type CreateUserFormData = z.infer<typeof createUserSchema>;
 
@@ -35,7 +33,6 @@ export default function UserManagementPage() {
     defaultValues: {
       username: "",
       email: "",
-      password: "",
       department: "paper_creator",
     },
   });
@@ -159,19 +156,12 @@ export default function UserManagementPage() {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Enter password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Password Setup</label>
+                <div className="text-sm text-muted-foreground border rounded-md p-3 bg-muted/50">
+                  📧 User will receive an email invitation to set their password
+                </div>
+              </div>
 
               <FormField
                 control={form.control}

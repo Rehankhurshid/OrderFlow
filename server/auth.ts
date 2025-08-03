@@ -21,7 +21,7 @@ export async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
-async function comparePasswords(supplied: string, stored: string) {
+export async function comparePasswords(supplied: string, stored: string) {
   const parts = stored.split(".");
   if (parts.length !== 2) {
     // If password is not in hash.salt format, it might be plain text (legacy)

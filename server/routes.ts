@@ -1,9 +1,11 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth, hashPassword } from "./auth";
+import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { storage } from "./storage";
 import { insertDeliveryOrderSchema, insertPartySchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
+import { randomBytes } from "crypto";
+import { sendEmail, generatePasswordSetupEmailTemplate, generatePasswordResetEmailTemplate } from "./email";
 
 export function registerRoutes(app: Express): Server {
   // Setup authentication routes
@@ -191,7 +193,9 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/users", requireAuth, requireDepartment(["role_creator"]), async (req, res) => {
     try {
-      const validatedData = insertUserSchema.parse(req.body);
+      // Modified schema to not require password - it will be set via email
+      const userSchema = insertUserSchema.omit({ password: true });
+      const validatedData = userSchema.parse(req.body);
       
       // Check if user already exists
       const existingUser = await storage.getUserByUsername(validatedData.username);
@@ -199,16 +203,43 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Username already exists" });
       }
 
-      // Hash the password before storing
-      const hashedPassword = await hashPassword(validatedData.password);
-      const userDataWithHashedPassword = {
+      // Create user with temporary password that will be changed
+      const tempPassword = await hashPassword(randomBytes(32).toString("hex"));
+      const userDataWithTempPassword = {
         ...validatedData,
-        password: hashedPassword
+        password: tempPassword
       };
 
-      const user = await storage.createUser(userDataWithHashedPassword);
+      const user = await storage.createUser(userDataWithTempPassword);
+      
+      // Generate password setup token
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours from now
+      
+      await storage.createPasswordResetToken({
+        userId: user.id,
+        token,
+        expiresAt
+      });
+      
+      // Send invitation email
+      const setupUrl = `${req.protocol}://${req.get('host')}/setup-password?token=${token}`;
+      const emailTemplate = generatePasswordSetupEmailTemplate(user.username, setupUrl);
+      
+      const emailSent = await sendEmail({
+        to: user.email,
+        subject: emailTemplate.subject,
+        htmlContent: emailTemplate.htmlContent,
+        textContent: emailTemplate.textContent
+      });
+      
+      if (!emailSent) {
+        return res.status(500).json({ message: "User created but failed to send invitation email" });
+      }
+      
       const { password, ...safeUser } = user;
-      res.status(201).json(safeUser);
+      res.status(201).json({ ...safeUser, invitationSent: true });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -227,6 +258,142 @@ export function registerRoutes(app: Express): Server {
       await storage.updateUserStatus(id, validatedData.isActive);
       
       res.json({ message: "User status updated successfully" });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Password setup and reset routes
+  app.get("/api/setup-password/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      const resetToken = await storage.getPasswordResetToken(token);
+      if (!resetToken) {
+        return res.status(400).json({ message: "Invalid or expired token" });
+      }
+      
+      if (new Date() > resetToken.expiresAt) {
+        return res.status(400).json({ message: "Token has expired" });
+      }
+      
+      const user = await storage.getUser(resetToken.userId);
+      if (!user) {
+        return res.status(400).json({ message: "User not found" });
+      }
+      
+      res.json({ 
+        valid: true, 
+        username: user.username,
+        email: user.email 
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/setup-password", async (req, res) => {
+    try {
+      const schema = z.object({
+        token: z.string(),
+        password: z.string().min(6, "Password must be at least 6 characters")
+      });
+      
+      const { token, password } = schema.parse(req.body);
+      
+      const resetToken = await storage.getPasswordResetToken(token);
+      if (!resetToken) {
+        return res.status(400).json({ message: "Invalid or expired token" });
+      }
+      
+      if (new Date() > resetToken.expiresAt) {
+        return res.status(400).json({ message: "Token has expired" });
+      }
+      
+      // Hash the new password
+      const hashedPassword = await hashPassword(password);
+      
+      // Update user password directly in database
+      await storage.updateUserPassword(resetToken.userId, hashedPassword);
+      
+      // Mark token as used
+      await storage.markTokenAsUsed(resetToken.id);
+      
+      res.json({ message: "Password set successfully" });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/request-password-reset", async (req, res) => {
+    try {
+      const schema = z.object({
+        email: z.string().email()
+      });
+      
+      const { email } = schema.parse(req.body);
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        // Don't reveal if email exists or not for security
+        return res.json({ message: "If the email exists, a reset link has been sent" });
+      }
+      
+      // Generate password reset token
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours from now
+      
+      await storage.createPasswordResetToken({
+        userId: user.id,
+        token,
+        expiresAt
+      });
+      
+      // Send reset email
+      const resetUrl = `${req.protocol}://${req.get('host')}/setup-password?token=${token}`;
+      const emailTemplate = generatePasswordResetEmailTemplate(user.username, resetUrl);
+      
+      await sendEmail({
+        to: user.email,
+        subject: emailTemplate.subject,
+        htmlContent: emailTemplate.htmlContent,
+        textContent: emailTemplate.textContent
+      });
+      
+      res.json({ message: "If the email exists, a reset link has been sent" });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/change-password", requireAuth, async (req, res) => {
+    try {
+      const schema = z.object({
+        currentPassword: z.string(),
+        newPassword: z.string().min(6, "Password must be at least 6 characters")
+      });
+      
+      const { currentPassword, newPassword } = schema.parse(req.body);
+      const user = req.user!;
+      
+      // Verify current password
+      const dbUser = await storage.getUser(user.id);
+      if (!dbUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const isCurrentPasswordValid = await comparePasswords(currentPassword, dbUser.password);
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({ message: "Current password is incorrect" });
+      }
+      
+      // Hash and update new password
+      const hashedPassword = await hashPassword(newPassword);
+      await storage.updateUserPassword(user.id, hashedPassword);
+      
+      res.json({ message: "Password changed successfully" });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }

@@ -3,6 +3,7 @@ import {
   parties, 
   deliveryOrders, 
   workflowHistory,
+  passwordResetTokens,
   type User, 
   type InsertUser,
   type Party,
@@ -11,11 +12,13 @@ import {
   type InsertDeliveryOrder,
   type WorkflowHistory,
   type InsertWorkflowHistory,
+  type PasswordResetToken,
+  type InsertPasswordResetToken,
   type DeliveryOrderWithParty,
   type WorkflowHistoryWithPerformer
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -25,9 +28,11 @@ const PostgresSessionStore = connectPg(session);
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;  
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUserStatus(id: string, isActive: string): Promise<void>;
+  updateUserPassword(id: string, password: string): Promise<void>;
   
   getAllParties(): Promise<Party[]>;
   createParty(party: InsertParty): Promise<Party>;
@@ -42,6 +47,11 @@ export interface IStorage {
   getWorkflowHistoryByDoId(doId: string): Promise<WorkflowHistoryWithPerformer[]>;
   
   generateDoNumber(): Promise<string>;
+  
+  createPasswordResetToken(token: InsertPasswordResetToken): Promise<PasswordResetToken>;
+  getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
+  markTokenAsUsed(tokenId: string): Promise<void>;
+  cleanupExpiredTokens(): Promise<void>;
   
   sessionStore: session.Store;
 }
@@ -80,6 +90,15 @@ export class DatabaseStorage implements IStorage {
 
   async updateUserStatus(id: string, isActive: string): Promise<void> {
     await db.update(users).set({ isActive }).where(eq(users.id, id));
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async updateUserPassword(id: string, password: string): Promise<void> {
+    await db.update(users).set({ password }).where(eq(users.id, id));
   }
 
   async getAllParties(): Promise<Party[]> {
@@ -265,6 +284,38 @@ export class DatabaseStorage implements IStorage {
     
     const count = result.length + 1;
     return `DO-${year}-${count.toString().padStart(3, '0')}`;
+  }
+
+  async createPasswordResetToken(tokenData: InsertPasswordResetToken): Promise<PasswordResetToken> {
+    const [token] = await db
+      .insert(passwordResetTokens)
+      .values(tokenData)
+      .returning();
+    return token;
+  }
+
+  async getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    const [resetToken] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(and(
+        eq(passwordResetTokens.token, token),
+        eq(passwordResetTokens.isUsed, "false")
+      ));
+    return resetToken || undefined;
+  }
+
+  async markTokenAsUsed(tokenId: string): Promise<void> {
+    await db
+      .update(passwordResetTokens)
+      .set({ isUsed: "true" })
+      .where(eq(passwordResetTokens.id, tokenId));
+  }
+
+  async cleanupExpiredTokens(): Promise<void> {
+    await db
+      .delete(passwordResetTokens)
+      .where(sql`expires_at < now()`);
   }
 }
 

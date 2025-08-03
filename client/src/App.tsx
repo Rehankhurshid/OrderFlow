@@ -12,6 +12,8 @@ import CreateDoPage from "@/pages/create-do-page";
 import ProcessDoPage from "@/pages/process-do-page";
 import SearchDoPage from "@/pages/search-do-page";
 import UserManagementPage from "@/pages/user-management-page";
+import SetupPasswordPage from "@/pages/setup-password-page";
+import SettingsPage from "@/pages/settings-page";
 import Sidebar from "@/components/layout/sidebar";
 
 function AppLayout({ children }: { children: React.ReactNode }) {
@@ -31,6 +33,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
+      <Route path="/setup-password" component={SetupPasswordPage} />
       
       <ProtectedRoute path="/" component={() => (
         <AppLayout>
@@ -59,6 +62,12 @@ function Router() {
       <ProtectedRoute path="/user-management" component={() => (
         <AppLayout>
           <UserManagementPage />
+        </AppLayout>
+      )} />
+      
+      <ProtectedRoute path="/settings" component={() => (
+        <AppLayout>
+          <SettingsPage />
         </AppLayout>
       )} />
       

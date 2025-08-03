@@ -8,7 +8,8 @@ import {
   ClipboardList, 
   Search, 
   Users, 
-  LogOut 
+  LogOut,
+  Settings 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -124,15 +125,27 @@ export default function Sidebar() {
           </div>
         </div>
         
-        <Button 
-          variant="ghost" 
-          className="w-full justify-start text-gray-700 hover:text-gray-900"
-          onClick={() => logoutMutation.mutate()}
-          disabled={logoutMutation.isPending}
-        >
-          <LogOut className="h-5 w-5 mr-3" />
-          {logoutMutation.isPending ? "Signing out..." : "Logout"}
-        </Button>
+        <div className="space-y-2">
+          <Link href="/settings" className="block">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-gray-700 hover:text-gray-900"
+            >
+              <Settings className="h-5 w-5 mr-3" />
+              Settings
+            </Button>
+          </Link>
+          
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-gray-700 hover:text-gray-900"
+            onClick={() => logoutMutation.mutate()}
+            disabled={logoutMutation.isPending}
+          >
+            <LogOut className="h-5 w-5 mr-3" />
+            {logoutMutation.isPending ? "Signing out..." : "Logout"}
+          </Button>
+        </div>
       </div>
     </div>
   );

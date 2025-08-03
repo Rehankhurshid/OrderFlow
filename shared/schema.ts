@@ -63,6 +63,15 @@ export const workflowHistory = pgTable("workflow_history", {
   performedAt: timestamp("performed_at").notNull().default(sql`now()`),
 });
 
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  isUsed: varchar("is_used").notNull().default("false"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   deliveryOrders: many(deliveryOrders),
@@ -96,6 +105,13 @@ export const workflowHistoryRelations = relations(workflowHistory, ({ one }) => 
   }),
 }));
 
+export const passwordResetTokensRelations = relations(passwordResetTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [passwordResetTokens.userId],
+    references: [users.id],
+  }),
+}));
+
 // Schema types
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -125,6 +141,12 @@ export const insertWorkflowHistorySchema = createInsertSchema(workflowHistory).p
   remarks: true,
 });
 
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).pick({
+  userId: true,
+  token: true,
+  expiresAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertParty = z.infer<typeof insertPartySchema>;
@@ -133,6 +155,8 @@ export type InsertDeliveryOrder = z.infer<typeof insertDeliveryOrderSchema>;
 export type DeliveryOrder = typeof deliveryOrders.$inferSelect;
 export type InsertWorkflowHistory = z.infer<typeof insertWorkflowHistorySchema>;
 export type WorkflowHistory = typeof workflowHistory.$inferSelect;
+export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 
 // Extended types for queries with relations
 export type DeliveryOrderWithParty = DeliveryOrder & {
