@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword } from "./auth";
 import { storage } from "./storage";
 import { insertDeliveryOrderSchema, insertPartySchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
@@ -199,7 +199,14 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Username already exists" });
       }
 
-      const user = await storage.createUser(validatedData);
+      // Hash the password before storing
+      const hashedPassword = await hashPassword(validatedData.password);
+      const userDataWithHashedPassword = {
+        ...validatedData,
+        password: hashedPassword
+      };
+
+      const user = await storage.createUser(userDataWithHashedPassword);
       const { password, ...safeUser } = user;
       res.status(201).json(safeUser);
     } catch (error: any) {
