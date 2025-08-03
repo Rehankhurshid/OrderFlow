@@ -1,4 +1,4 @@
-import { CheckCircle, Circle, Clock } from "lucide-react";
+import { CheckCircle, Circle, Clock, MapPin } from "lucide-react";
 
 interface WorkflowProgressProps {
   currentStatus: string;
@@ -13,6 +13,45 @@ const workflowSteps = [
 ];
 
 export default function WorkflowProgress({ currentStatus, currentLocation }: WorkflowProgressProps) {
+  const getStepStatus = (stepId: string) => {
+    // Project Office statuses
+    if (stepId === "project_office") {
+      if (currentStatus === "received_at_project_office") {
+        return "In Process";
+      }
+      if (["dispatched_from_project_office", "at_area_office", "at_road_sale", "completed"].includes(currentStatus)) {
+        return "Done";
+      }
+      if (currentStatus === "at_project_office") {
+        return "Pending";
+      }
+    }
+    
+    // Area Office statuses  
+    if (stepId === "area_office") {
+      if (["dispatched_from_project_office", "at_area_office"].includes(currentStatus)) {
+        return "In Progress";
+      }
+      if (["at_road_sale", "completed"].includes(currentStatus)) {
+        return "Done";
+      }
+    }
+    
+    // Road Sale Office - Final Destination
+    if (stepId === "road_sale") {
+      if (currentStatus === "at_road_sale" || currentStatus === "completed") {
+        return "Final Destination";
+      }
+    }
+    
+    // Paper Creator
+    if (stepId === "paper_creator" && currentStatus !== "created") {
+      return "Done";
+    }
+    
+    return "";
+  };
+
   const getStepState = (stepId: string, stepStatus: string) => {
     if (currentStatus === "completed") {
       return "completed";
@@ -35,7 +74,12 @@ export default function WorkflowProgress({ currentStatus, currentLocation }: Wor
     return "pending";
   };
 
-  const getStepIcon = (state: string) => {
+  const getStepIcon = (state: string, stepId: string) => {
+    // Special icon for Road Sale as final destination
+    if (stepId === "road_sale" && (currentStatus === "at_road_sale" || currentStatus === "completed")) {
+      return <MapPin className="h-6 w-6 text-purple-600" />;
+    }
+    
     switch (state) {
       case "completed":
         return <CheckCircle className="h-6 w-6 text-green-600" />;
@@ -81,11 +125,12 @@ export default function WorkflowProgress({ currentStatus, currentLocation }: Wor
       <div className="flex items-center space-x-4">
         {workflowSteps.map((step, index) => {
           const state = getStepState(step.id, step.status);
+          const status = getStepStatus(step.id);
           
           return (
             <div key={step.id} className="flex items-center">
-              <div className="flex flex-col items-center">
-                {getStepIcon(state)}
+              <div className="flex flex-col items-center min-w-[100px]">
+                {getStepIcon(state, step.id)}
                 <span 
                   className={`mt-2 text-sm ${
                     state === "current" 
@@ -99,6 +144,17 @@ export default function WorkflowProgress({ currentStatus, currentLocation }: Wor
                 >
                   {step.label}
                 </span>
+                {status && (
+                  <span className={`text-xs mt-1 ${
+                    status === "Done" ? "text-green-600 font-medium" :
+                    status === "In Process" || status === "In Progress" ? "text-blue-600 font-medium" :
+                    status === "Final Destination" ? "text-purple-600 font-medium" :
+                    status === "Pending" ? "text-gray-500" :
+                    "text-gray-600"
+                  }`}>
+                    {status}
+                  </span>
+                )}
               </div>
               
               {index < workflowSteps.length - 1 && (

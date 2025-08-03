@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
 const createDoSchema = insertDeliveryOrderSchema.extend({
+  doNumber: z.string().min(1, "DO Number is required"),
   validFrom: z.string().min(1, "Valid from date is required"),
   validUntil: z.string().min(1, "Valid until date is required"),
 }).refine((data) => {
@@ -37,6 +38,7 @@ export default function CreateDoForm() {
   const form = useForm<CreateDoFormData>({
     resolver: zodResolver(createDoSchema),
     defaultValues: {
+      doNumber: "",
       partyId: "",
       authorizedPerson: "",
       validFrom: "",
@@ -89,15 +91,19 @@ export default function CreateDoForm() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">DO Number</label>
-                <Input 
-                  value="Auto-generated" 
-                  disabled 
-                  className="bg-gray-50"
-                />
-                <p className="text-sm text-gray-500 mt-1">System will auto-generate DO number</p>
-              </div>
+              <FormField
+                control={form.control}
+                name="doNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>DO Number *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter DO number (e.g., DO-2025-001)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
@@ -113,9 +119,9 @@ export default function CreateDoForm() {
                       </FormControl>
                       <SelectContent>
                         {partiesLoading ? (
-                          <SelectItem value="" disabled>Loading parties...</SelectItem>
+                          <SelectItem value="loading" disabled>Loading parties...</SelectItem>
                         ) : parties?.length === 0 ? (
-                          <SelectItem value="" disabled>No parties available</SelectItem>
+                          <SelectItem value="no-parties" disabled>No parties available</SelectItem>
                         ) : (
                           parties?.map((party) => (
                             <SelectItem key={party.id} value={party.id}>

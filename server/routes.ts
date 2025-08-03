@@ -49,13 +49,60 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Public API endpoints for portal
+  app.get("/api/public/delivery-orders", async (req, res) => {
+    try {
+      const { status, party, doNumber } = req.query;
+      
+      let deliveryOrders = await storage.getAllDeliveryOrders();
+      
+      // Filter by status if provided
+      if (status && status !== "all") {
+        deliveryOrders = deliveryOrders.filter(order => order.currentStatus === status);
+      }
+      
+      // Filter by party if provided
+      if (party && party !== "all") {
+        deliveryOrders = deliveryOrders.filter(order => order.party.partyName === party);
+      }
+      
+      // Filter by DO number if provided
+      if (doNumber) {
+        deliveryOrders = deliveryOrders.filter(order => 
+          order.doNumber.toLowerCase().includes((doNumber as string).toLowerCase())
+        );
+      }
+      
+      res.json(deliveryOrders);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/public/parties", async (req, res) => {
+    try {
+      const parties = await storage.getAllParties();
+      res.json(parties);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Delivery Order routes
   app.post("/api/delivery-orders", requireAuth, requireDepartment(["paper_creator"]), async (req, res) => {
     try {
-      const validatedData = insertDeliveryOrderSchema.parse(req.body);
+      // Convert date strings to Date objects before validation
+      const dataWithDates = {
+        ...req.body,
+        validFrom: new Date(req.body.validFrom),
+        validUntil: new Date(req.body.validUntil),
+      };
+      
+      const validatedData = insertDeliveryOrderSchema.parse(dataWithDates);
       const deliveryOrder = await storage.createDeliveryOrder({
         ...validatedData,
         createdBy: req.user!.id,
+        doNumber: req.body.doNumber,
       });
       
       // Create workflow history for submission to project office
@@ -83,6 +130,52 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/delivery-orders/my-department", requireAuth, async (req, res) => {
     try {
       const deliveryOrders = await storage.getDeliveryOrdersByDepartment(req.user!.department);
+      res.json(deliveryOrders);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/delivery-orders/processed", requireAuth, async (req, res) => {
+    try {
+      const deliveryOrders = await storage.getProcessedDeliveryOrdersByDepartment(req.user!.department);
+      res.json(deliveryOrders);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/delivery-orders/pending", requireAuth, async (req, res) => {
+    try {
+      const deliveryOrders = await storage.getPendingDeliveryOrdersByDepartment(req.user!.department);
+      res.json(deliveryOrders);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Project Office specific routes
+  app.get("/api/delivery-orders/project-office/created", requireAuth, requireDepartment(["project_office"]), async (req, res) => {
+    try {
+      const deliveryOrders = await storage.getProjectOfficeCreatedDOs();
+      res.json(deliveryOrders);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/delivery-orders/project-office/received", requireAuth, requireDepartment(["project_office"]), async (req, res) => {
+    try {
+      const deliveryOrders = await storage.getProjectOfficeReceivedDOs();
+      res.json(deliveryOrders);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/delivery-orders/project-office/forwarded", requireAuth, requireDepartment(["project_office"]), async (req, res) => {
+    try {
+      const deliveryOrders = await storage.getProjectOfficeForwardedDOs();
       res.json(deliveryOrders);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -179,6 +272,61 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Mark as received (Project Office only)
+  app.post("/api/delivery-orders/:id/receive", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.department !== "project_office") {
+        return res.status(403).json({ message: "Only Project Office can mark as received" });
+      }
+
+      const { id } = req.params;
+      const { remarks } = req.body;
+
+      await storage.updateDeliveryOrderStatus(id, "received_at_project_office", "project_office");
+
+      await storage.createWorkflowHistory({
+        doId: id,
+        fromDepartment: "project_office",
+        toDepartment: "project_office",
+        action: "received",
+        remarks,
+        performedBy: req.user!.id,
+      });
+
+      res.json({ message: "Delivery Order marked as received" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Mark as dispatched (Project Office only) - forwards to Area Office
+  app.post("/api/delivery-orders/:id/dispatch", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.department !== "project_office") {
+        return res.status(403).json({ message: "Only Project Office can mark as dispatched" });
+      }
+
+      const { id } = req.params;
+      const { remarks } = req.body;
+
+      // Forward to Area Office
+      await storage.updateDeliveryOrderStatus(id, "at_area_office", "area_office");
+
+      await storage.createWorkflowHistory({
+        doId: id,
+        fromDepartment: "project_office",
+        toDepartment: "area_office",
+        action: "dispatched_to_area_office",
+        remarks,
+        performedBy: req.user!.id,
+      });
+
+      res.json({ message: "Delivery Order dispatched to Area Office" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // User management routes (Role Creator only)
   app.get("/api/users", requireAuth, requireDepartment(["role_creator"]), async (req, res) => {
     try {
@@ -193,9 +341,8 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/users", requireAuth, requireDepartment(["role_creator"]), async (req, res) => {
     try {
-      // Modified schema to not require password - it will be set via email
-      const userSchema = insertUserSchema.omit({ password: true });
-      const validatedData = userSchema.parse(req.body);
+      // Now accepting password directly from the admin
+      const validatedData = insertUserSchema.parse(req.body);
       
       // Check if user already exists
       const existingUser = await storage.getUserByUsername(validatedData.username);
@@ -203,43 +350,17 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Username already exists" });
       }
 
-      // Create user with temporary password that will be changed
-      const tempPassword = await hashPassword(randomBytes(32).toString("hex"));
-      const userDataWithTempPassword = {
+      // Hash the provided password
+      const hashedPassword = await hashPassword(validatedData.password);
+      const userDataWithHashedPassword = {
         ...validatedData,
-        password: tempPassword
+        password: hashedPassword
       };
 
-      const user = await storage.createUser(userDataWithTempPassword);
-      
-      // Generate password setup token
-      const token = randomBytes(32).toString("hex");
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours from now
-      
-      await storage.createPasswordResetToken({
-        userId: user.id,
-        token,
-        expiresAt
-      });
-      
-      // Send invitation email
-      const setupUrl = `${req.protocol}://${req.get('host')}/setup-password?token=${token}`;
-      const emailTemplate = generatePasswordSetupEmailTemplate(user.username, setupUrl);
-      
-      const emailSent = await sendEmail({
-        to: user.email,
-        subject: emailTemplate.subject,
-        htmlContent: emailTemplate.htmlContent,
-        textContent: emailTemplate.textContent
-      });
-      
-      if (!emailSent) {
-        return res.status(500).json({ message: "User created but failed to send invitation email" });
-      }
+      const user = await storage.createUser(userDataWithHashedPassword);
       
       const { password, ...safeUser } = user;
-      res.status(201).json({ ...safeUser, invitationSent: true });
+      res.status(201).json(safeUser);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -263,23 +384,97 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Delete user route (admin only)
+  app.delete("/api/users/:id", requireAuth, requireDepartment(["role_creator"]), async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Prevent deleting yourself
+      if (id === req.user!.id) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+      
+      await storage.deleteUser(id);
+      res.json({ message: "User deleted successfully" });
+    } catch (error: any) {
+      console.error("Delete user error:", error);
+      
+      // Check if it's a foreign key constraint error
+      if (error.message?.includes("foreign key") || error.code === "23503") {
+        return res.status(400).json({ 
+          message: "Cannot delete user. This user has associated records (delivery orders, workflow history, etc.). Please deactivate the user instead." 
+        });
+      }
+      
+      res.status(400).json({ message: error.message || "Failed to delete user" });
+    }
+  });
+
+  // Send password reset link (admin only)
+  app.post("/api/users/:id/send-reset-link", requireAuth, requireDepartment(["role_creator"]), async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Generate password reset token
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours from now
+      
+      await storage.createPasswordResetToken({
+        userId: user.id,
+        token,
+        expiresAt
+      });
+      
+      // Send reset email
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const resetUrl = `${frontendUrl}/setup-password?token=${token}`;
+      const emailTemplate = generatePasswordResetEmailTemplate(user.username, resetUrl);
+      
+      const emailSent = await sendEmail({
+        to: user.email,
+        subject: emailTemplate.subject,
+        htmlContent: emailTemplate.htmlContent,
+        textContent: emailTemplate.textContent
+      });
+      
+      if (!emailSent) {
+        return res.status(500).json({ message: "Failed to send reset email" });
+      }
+      
+      res.json({ message: "Password reset link sent successfully" });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   // Password setup and reset routes
   app.get("/api/setup-password/:token", async (req, res) => {
     try {
       const { token } = req.params;
+      console.log("Token validation requested for:", token);
       
       const resetToken = await storage.getPasswordResetToken(token);
+      console.log("Reset token found:", resetToken ? "Yes" : "No");
+      
       if (!resetToken) {
-        return res.status(400).json({ message: "Invalid or expired token" });
+        return res.json({ valid: false });
       }
       
       if (new Date() > resetToken.expiresAt) {
-        return res.status(400).json({ message: "Token has expired" });
+        console.log("Token expired:", resetToken.expiresAt);
+        return res.json({ valid: false });
       }
       
       const user = await storage.getUser(resetToken.userId);
       if (!user) {
-        return res.status(400).json({ message: "User not found" });
+        console.log("User not found for token");
+        return res.json({ valid: false });
       }
       
       res.json({ 
@@ -352,7 +547,8 @@ export function registerRoutes(app: Express): Server {
       });
       
       // Send reset email
-      const resetUrl = `${req.protocol}://${req.get('host')}/setup-password?token=${token}`;
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const resetUrl = `${frontendUrl}/setup-password?token=${token}`;
       const emailTemplate = generatePasswordResetEmailTemplate(user.username, resetUrl);
       
       await sendEmail({
@@ -414,11 +610,11 @@ export function registerRoutes(app: Express): Server {
       const stats = {
         total: deliveryOrders.length,
         inProgress: deliveryOrders.filter(delivery => 
-          ["at_project_office", "at_area_office", "at_road_sale"].includes(delivery.currentStatus)
+          ["at_project_office", "received_at_project_office", "dispatched_from_project_office", "at_area_office", "at_road_sale"].includes(delivery.currentStatus)
         ).length,
         completed: deliveryOrders.filter(delivery => delivery.currentStatus === "completed").length,
         pending: deliveryOrders.filter(delivery => 
-          delivery.currentLocation === user!.department && delivery.currentStatus !== "completed"
+          delivery.currentLocation === user!.department && delivery.currentStatus !== "completed" && delivery.currentStatus !== "rejected"
         ).length,
       };
 

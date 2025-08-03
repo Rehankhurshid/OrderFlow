@@ -13,16 +13,31 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { insertUserSchema, type User } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Users, UserPlus } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { Users, UserPlus, Trash2, Mail } from "lucide-react";
 import { z } from "zod";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-const createUserSchema = insertUserSchema.omit({ password: true });
+const createUserSchema = insertUserSchema.extend({
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
 
 type CreateUserFormData = z.infer<typeof createUserSchema>;
 
 export default function UserManagementPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
 
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -33,6 +48,7 @@ export default function UserManagementPage() {
     defaultValues: {
       username: "",
       email: "",
+      password: "",
       department: "paper_creator",
     },
   });
@@ -70,6 +86,47 @@ export default function UserManagementPage() {
         description: "User status updated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/users/${id}`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendResetLinkMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("POST", `/api/users/${id}/send-reset-link`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Password reset link sent successfully",
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -156,12 +213,19 @@ export default function UserManagementPage() {
                 )}
               />
 
-              <div className="grid gap-2">
-                <label className="text-sm font-medium">Password Setup</label>
-                <div className="text-sm text-muted-foreground border rounded-md p-3 bg-muted/50">
-                  📧 User will receive an email invitation to set their password
-                </div>
-              </div>
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
@@ -251,14 +315,58 @@ export default function UserManagementPage() {
                         {new Date(user.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant={user.isActive === "true" ? "destructive" : "default"}
-                          size="sm"
-                          onClick={() => toggleUserStatus(user)}
-                          disabled={updateUserStatusMutation.isPending}
-                        >
-                          {user.isActive === "true" ? "Deactivate" : "Activate"}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant={user.isActive === "true" ? "destructive" : "default"}
+                            size="sm"
+                            onClick={() => toggleUserStatus(user)}
+                            disabled={updateUserStatusMutation.isPending}
+                          >
+                            {user.isActive === "true" ? "Deactivate" : "Activate"}
+                          </Button>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => sendResetLinkMutation.mutate(user.id)}
+                            disabled={sendResetLinkMutation.isPending}
+                            title="Send password reset link"
+                          >
+                            <Mail className="h-4 w-4" />
+                          </Button>
+
+                          {currentUser?.id !== user.id && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={deleteUserMutation.isPending}
+                                  title="Delete user"
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete user "{user.username}"? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteUserMutation.mutate(user.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

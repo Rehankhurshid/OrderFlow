@@ -1,8 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { FileText, Clock, CheckCircle, AlertTriangle, Plus, ArrowRight, Check } from "lucide-react";
 import Header from "@/components/layout/header";
+import { useAuth } from "@/hooks/use-auth";
+import DoViewTable from "@/components/do/do-view-table";
+import type { DeliveryOrderWithParty } from "@shared/schema";
 
 interface DashboardStats {
   total: number;
@@ -22,12 +27,28 @@ interface RecentActivity {
 }
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  const isRoleCreator = user?.department === "role_creator";
+
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats"],
   });
 
   const { data: recentDOs, isLoading: recentLoading } = useQuery({
     queryKey: ["/api/delivery-orders/my-department"],
+  });
+
+  const { data: allDOs, isLoading: allDOsLoading } = useQuery<DeliveryOrderWithParty[]>({
+    queryKey: ["/api/delivery-orders/all"],
+    enabled: isRoleCreator,
+  });
+
+  const { data: processedDOs, isLoading: processedDOsLoading } = useQuery<DeliveryOrderWithParty[]>({
+    queryKey: ["/api/delivery-orders/processed"],
+  });
+
+  const { data: pendingDOs, isLoading: pendingDOsLoading } = useQuery<DeliveryOrderWithParty[]>({
+    queryKey: ["/api/delivery-orders/pending"],
   });
 
   const getRecentActivity = (recentDOs: any[]): RecentActivity[] => {
@@ -168,54 +189,164 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recentLoading ? (
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                  <Skeleton className="h-10 w-10 rounded-full" />
-                  <div className="space-y-2 flex-1">
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-3 w-1/2" />
-                  </div>
-                  <Skeleton className="h-3 w-20" />
-                </div>
-              ))}
-            </div>
-          ) : recentActivity.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <p>No recent activity</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-center space-x-4">
-                  <div className={`w-10 h-10 ${getActivityBgColor(activity.type)} rounded-full flex items-center justify-center`}>
-                    {getActivityIcon(activity.type)}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">
-                      {activity.doNumber} - {activity.action}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Party: {activity.partyName} • By: {activity.performer}
-                    </p>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {new Date(activity.performedAt).toLocaleDateString()}
-                  </div>
-                </div>
-              ))}
-            </div>
+      {/* DO Management Tabs */}
+      <Tabs defaultValue={isRoleCreator ? "all" : "pending"} className="space-y-4">
+        <TabsList className={`grid w-full max-w-[600px] ${isRoleCreator ? 'grid-cols-3' : 'grid-cols-3'}`}>
+          {isRoleCreator && (
+            <TabsTrigger value="all" className="flex items-center space-x-2">
+              <span>All DOs</span>
+              {allDOs && allDOs.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {allDOs.length}
+                </Badge>
+              )}
+            </TabsTrigger>
           )}
-        </CardContent>
-      </Card>
+          <TabsTrigger value="pending" className="flex items-center space-x-2">
+            <span>Pending Action</span>
+            {pendingDOs && pendingDOs.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {pendingDOs.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="processed" className="flex items-center space-x-2">
+            <span>Processed/Forwarded</span>
+            {processedDOs && processedDOs.length > 0 && (
+              <Badge variant="outline" className="ml-2">
+                {processedDOs.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="activity" className="flex items-center space-x-2">
+            <span>Recent Activity</span>
+          </TabsTrigger>
+        </TabsList>
+
+        {isRoleCreator && (
+          <TabsContent value="all" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>All Delivery Orders</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {allDOsLoading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : allDOs && allDOs.length > 0 ? (
+                  <DoViewTable deliveryOrders={allDOs} isLoading={allDOsLoading} showCurrentLocation={true} />
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <p>No delivery orders found</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        <TabsContent value="pending" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Action</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {pendingDOsLoading ? (
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              ) : pendingDOs && pendingDOs.length > 0 ? (
+                <DoViewTable deliveryOrders={pendingDOs} isLoading={pendingDOsLoading} showCurrentLocation={true} />
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>No pending delivery orders</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="processed" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Processed/Forwarded Delivery Orders</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {processedDOsLoading ? (
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              ) : processedDOs && processedDOs.length > 0 ? (
+                <DoViewTable deliveryOrders={processedDOs} isLoading={processedDOsLoading} showCurrentLocation={true} />
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>No processed delivery orders found</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="activity" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recentLoading ? (
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div className="space-y-2 flex-1">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/2" />
+                      </div>
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                  ))}
+                </div>
+              ) : recentActivity.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>No recent activity</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentActivity.map((activity) => (
+                    <div key={activity.id} className="flex items-center space-x-4">
+                      <div className={`w-10 h-10 ${getActivityBgColor(activity.type)} rounded-full flex items-center justify-center`}>
+                        {getActivityIcon(activity.type)}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {activity.doNumber} - {activity.action}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Party: {activity.partyName} • By: {activity.performer}
+                        </p>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {new Date(activity.performedAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

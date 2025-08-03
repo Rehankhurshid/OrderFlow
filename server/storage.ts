@@ -18,7 +18,7 @@ import {
   type WorkflowHistoryWithPerformer
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, not } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -33,12 +33,15 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   updateUserStatus(id: string, isActive: string): Promise<void>;
   updateUserPassword(id: string, password: string): Promise<void>;
+  deleteUser(id: string): Promise<void>;
   
   getAllParties(): Promise<Party[]>;
   createParty(party: InsertParty): Promise<Party>;
   
   createDeliveryOrder(deliveryOrder: InsertDeliveryOrder & { createdBy: string }): Promise<DeliveryOrder>;
   getDeliveryOrdersByDepartment(department: string): Promise<DeliveryOrderWithParty[]>;
+  getProcessedDeliveryOrdersByDepartment(department: string): Promise<DeliveryOrderWithParty[]>;
+  getPendingDeliveryOrdersByDepartment(department: string): Promise<DeliveryOrderWithParty[]>;
   getDeliveryOrderByNumber(doNumber: string): Promise<DeliveryOrderWithParty | undefined>;
   updateDeliveryOrderStatus(id: string, status: string, location: string): Promise<void>;
   getAllDeliveryOrders(): Promise<DeliveryOrderWithParty[]>;
@@ -101,6 +104,14 @@ export class DatabaseStorage implements IStorage {
     await db.update(users).set({ password }).where(eq(users.id, id));
   }
 
+  async deleteUser(id: string): Promise<void> {
+    // First delete any password reset tokens for this user
+    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, id));
+    
+    // Then delete the user
+    await db.delete(users).where(eq(users.id, id));
+  }
+
   async getAllParties(): Promise<Party[]> {
     return await db.select().from(parties).orderBy(parties.partyName);
   }
@@ -113,14 +124,17 @@ export class DatabaseStorage implements IStorage {
     return party;
   }
 
-  async createDeliveryOrder(deliveryOrderData: InsertDeliveryOrder & { createdBy: string }): Promise<DeliveryOrder> {
-    const doNumber = await this.generateDoNumber();
+  async createDeliveryOrder(deliveryOrderData: InsertDeliveryOrder & { createdBy: string, doNumber: string }): Promise<DeliveryOrder> {
+    // Check if DO number already exists
+    const existing = await this.getDeliveryOrderByNumber(deliveryOrderData.doNumber);
+    if (existing) {
+      throw new Error(`DO number ${deliveryOrderData.doNumber} already exists`);
+    }
     
     const [deliveryOrder] = await db
       .insert(deliveryOrders)
       .values({
         ...deliveryOrderData,
-        doNumber,
       })
       .returning();
     
@@ -136,6 +150,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDeliveryOrdersByDepartment(department: string): Promise<DeliveryOrderWithParty[]> {
+    // For paper creators, show all DOs they created regardless of current location
+    // For other departments, show only DOs currently in their location
+    const whereCondition = department === 'paper_creator' 
+      ? eq(users.department, department as any)
+      : eq(deliveryOrders.currentLocation, department as any);
+    
     return await db
       .select({
         id: deliveryOrders.id,
@@ -164,7 +184,49 @@ export class DatabaseStorage implements IStorage {
       .from(deliveryOrders)
       .innerJoin(parties, eq(deliveryOrders.partyId, parties.id))
       .innerJoin(users, eq(deliveryOrders.createdBy, users.id))
-      .where(eq(deliveryOrders.currentLocation, department as any))
+      .where(whereCondition)
+      .orderBy(desc(deliveryOrders.createdAt));
+  }
+
+  async getProcessedDeliveryOrdersByDepartment(department: string): Promise<DeliveryOrderWithParty[]> {
+    // Get all DOs that have been processed by this department (have workflow history from this department)
+    // but are no longer at this department
+    const subquery = db
+      .selectDistinct({ doId: workflowHistory.doId })
+      .from(workflowHistory)
+      .where(eq(workflowHistory.fromDepartment, department as any))
+      .as('processed');
+
+    return await db
+      .select({
+        id: deliveryOrders.id,
+        doNumber: deliveryOrders.doNumber,
+        partyId: deliveryOrders.partyId,
+        authorizedPerson: deliveryOrders.authorizedPerson,
+        validFrom: deliveryOrders.validFrom,
+        validUntil: deliveryOrders.validUntil,
+        currentStatus: deliveryOrders.currentStatus,
+        currentLocation: deliveryOrders.currentLocation,
+        notes: deliveryOrders.notes,
+        createdBy: deliveryOrders.createdBy,
+        createdAt: deliveryOrders.createdAt,
+        party: {
+          id: parties.id,
+          partyNumber: parties.partyNumber,
+          partyName: parties.partyName,
+          createdAt: parties.createdAt,
+        },
+        creator: {
+          id: users.id,
+          username: users.username,
+          department: users.department,
+        },
+      })
+      .from(deliveryOrders)
+      .innerJoin(parties, eq(deliveryOrders.partyId, parties.id))
+      .innerJoin(users, eq(deliveryOrders.createdBy, users.id))
+      .innerJoin(subquery, eq(deliveryOrders.id, subquery.doId))
+      .where(sql`${deliveryOrders.currentLocation} != ${department}`)
       .orderBy(desc(deliveryOrders.createdAt));
   }
 
@@ -316,6 +378,153 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(passwordResetTokens)
       .where(sql`expires_at < now()`);
+  }
+
+  async getPendingDeliveryOrdersByDepartment(department: string): Promise<DeliveryOrderWithParty[]> {
+    return await db
+      .select({
+        id: deliveryOrders.id,
+        doNumber: deliveryOrders.doNumber,
+        partyId: deliveryOrders.partyId,
+        authorizedPerson: deliveryOrders.authorizedPerson,
+        validFrom: deliveryOrders.validFrom,
+        validUntil: deliveryOrders.validUntil,
+        currentStatus: deliveryOrders.currentStatus,
+        currentLocation: deliveryOrders.currentLocation,
+        notes: deliveryOrders.notes,
+        createdBy: deliveryOrders.createdBy,
+        createdAt: deliveryOrders.createdAt,
+        party: {
+          id: parties.id,
+          partyNumber: parties.partyNumber,
+          partyName: parties.partyName,
+          createdAt: parties.createdAt,
+        },
+        creator: {
+          id: users.id,
+          username: users.username,
+          department: users.department,
+        },
+      })
+      .from(deliveryOrders)
+      .innerJoin(parties, eq(deliveryOrders.partyId, parties.id))
+      .innerJoin(users, eq(deliveryOrders.createdBy, users.id))
+      .where(and(
+        eq(deliveryOrders.currentLocation, department as any),
+        not(eq(deliveryOrders.currentStatus, 'completed' as any)),
+        not(eq(deliveryOrders.currentStatus, 'rejected' as any))
+      ))
+      .orderBy(desc(deliveryOrders.createdAt));
+  }
+
+  // Project Office specific methods
+  async getProjectOfficeCreatedDOs(): Promise<DeliveryOrderWithParty[]> {
+    return await db
+      .select({
+        id: deliveryOrders.id,
+        doNumber: deliveryOrders.doNumber,
+        partyId: deliveryOrders.partyId,
+        authorizedPerson: deliveryOrders.authorizedPerson,
+        validFrom: deliveryOrders.validFrom,
+        validUntil: deliveryOrders.validUntil,
+        currentStatus: deliveryOrders.currentStatus,
+        currentLocation: deliveryOrders.currentLocation,
+        notes: deliveryOrders.notes,
+        createdBy: deliveryOrders.createdBy,
+        createdAt: deliveryOrders.createdAt,
+        party: {
+          id: parties.id,
+          partyNumber: parties.partyNumber,
+          partyName: parties.partyName,
+          createdAt: parties.createdAt,
+        },
+        creator: {
+          id: users.id,
+          username: users.username,
+          department: users.department,
+        },
+      })
+      .from(deliveryOrders)
+      .innerJoin(parties, eq(deliveryOrders.partyId, parties.id))
+      .innerJoin(users, eq(deliveryOrders.createdBy, users.id))
+      .where(eq(deliveryOrders.currentStatus, 'at_project_office' as any))
+      .orderBy(desc(deliveryOrders.createdAt));
+  }
+
+  async getProjectOfficeReceivedDOs(): Promise<DeliveryOrderWithParty[]> {
+    return await db
+      .select({
+        id: deliveryOrders.id,
+        doNumber: deliveryOrders.doNumber,
+        partyId: deliveryOrders.partyId,
+        authorizedPerson: deliveryOrders.authorizedPerson,
+        validFrom: deliveryOrders.validFrom,
+        validUntil: deliveryOrders.validUntil,
+        currentStatus: deliveryOrders.currentStatus,
+        currentLocation: deliveryOrders.currentLocation,
+        notes: deliveryOrders.notes,
+        createdBy: deliveryOrders.createdBy,
+        createdAt: deliveryOrders.createdAt,
+        party: {
+          id: parties.id,
+          partyNumber: parties.partyNumber,
+          partyName: parties.partyName,
+          createdAt: parties.createdAt,
+        },
+        creator: {
+          id: users.id,
+          username: users.username,
+          department: users.department,
+        },
+      })
+      .from(deliveryOrders)
+      .innerJoin(parties, eq(deliveryOrders.partyId, parties.id))
+      .innerJoin(users, eq(deliveryOrders.createdBy, users.id))
+      .where(eq(deliveryOrders.currentStatus, 'received_at_project_office' as any))
+      .orderBy(desc(deliveryOrders.createdAt));
+  }
+
+  async getProjectOfficeForwardedDOs(): Promise<DeliveryOrderWithParty[]> {
+    // Get all DOs that have been forwarded by project office
+    const subquery = db
+      .selectDistinct({ doId: workflowHistory.doId })
+      .from(workflowHistory)
+      .where(and(
+        eq(workflowHistory.fromDepartment, 'project_office' as any),
+        eq(workflowHistory.action, 'dispatched_to_area_office' as any)
+      ))
+      .as('forwarded');
+
+    return await db
+      .select({
+        id: deliveryOrders.id,
+        doNumber: deliveryOrders.doNumber,
+        partyId: deliveryOrders.partyId,
+        authorizedPerson: deliveryOrders.authorizedPerson,
+        validFrom: deliveryOrders.validFrom,
+        validUntil: deliveryOrders.validUntil,
+        currentStatus: deliveryOrders.currentStatus,
+        currentLocation: deliveryOrders.currentLocation,
+        notes: deliveryOrders.notes,
+        createdBy: deliveryOrders.createdBy,
+        createdAt: deliveryOrders.createdAt,
+        party: {
+          id: parties.id,
+          partyNumber: parties.partyNumber,
+          partyName: parties.partyName,
+          createdAt: parties.createdAt,
+        },
+        creator: {
+          id: users.id,
+          username: users.username,
+          department: users.department,
+        },
+      })
+      .from(deliveryOrders)
+      .innerJoin(parties, eq(deliveryOrders.partyId, parties.id))
+      .innerJoin(users, eq(deliveryOrders.createdBy, users.id))
+      .innerJoin(subquery, eq(deliveryOrders.id, subquery.doId))
+      .orderBy(desc(deliveryOrders.createdAt));
   }
 }
 

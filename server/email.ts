@@ -1,11 +1,17 @@
 import { TransactionalEmailsApi, TransactionalEmailsApiApiKeys, SendSmtpEmail } from '@getbrevo/brevo';
 
-if (!process.env.BREVO_API_KEY) {
-  throw new Error("BREVO_API_KEY environment variable must be set");
-}
+// Check if email is configured
+const isEmailConfigured = !!process.env.BREVO_API_KEY;
 
-const apiInstance = new TransactionalEmailsApi();
-apiInstance.setApiKey(TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
+let apiInstance: TransactionalEmailsApi | null = null;
+
+if (isEmailConfigured) {
+  apiInstance = new TransactionalEmailsApi();
+  apiInstance.setApiKey(TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY!);
+  console.log('Email service configured with Brevo');
+} else {
+  console.warn('BREVO_API_KEY not set - email functionality will be disabled');
+}
 
 interface EmailParams {
   to: string;
@@ -15,18 +21,29 @@ interface EmailParams {
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
+  if (!apiInstance) {
+    console.log('Email service not configured - would have sent email to:', params.to);
+    console.log('Subject:', params.subject);
+    return false;
+  }
+
   try {
+    console.log(`Attempting to send email to: ${params.to}`);
+    console.log(`Subject: ${params.subject}`);
+    
     const sendSmtpEmail = new SendSmtpEmail();
     sendSmtpEmail.subject = params.subject;
     sendSmtpEmail.htmlContent = params.htmlContent;
     sendSmtpEmail.textContent = params.textContent;
     sendSmtpEmail.to = [{ email: params.to }];
-    sendSmtpEmail.sender = { name: "Delivery Order System", email: "noreply@deliveryorders.com" };
+    sendSmtpEmail.sender = { name: "Delivery Order System", email: "rehan@activeset.co" };
 
-    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('Email sent successfully:', result);
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Brevo email error:', error);
+    console.error('Error details:', error?.response?.body || error?.message || 'Unknown error');
     return false;
   }
 }

@@ -37,7 +37,7 @@ export default function AuthPage() {
 
   // Redirect if already logged in
   if (user) {
-    setLocation("/");
+    setLocation("/dashboard");
     return null;
   }
 

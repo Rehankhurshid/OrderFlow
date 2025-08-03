@@ -23,23 +23,23 @@ const departmentNames = {
 
 const navigationItems = {
   paper_creator: [
-    { path: "/", icon: LayoutDashboard, label: "Dashboard" },
+    { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { path: "/create-do", icon: Plus, label: "Create DO" },
   ],
   project_office: [
-    { path: "/", icon: LayoutDashboard, label: "Dashboard" },
+    { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { path: "/process-do", icon: ClipboardList, label: "Process DOs" },
   ],
   area_office: [
-    { path: "/", icon: LayoutDashboard, label: "Dashboard" },
+    { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { path: "/process-do", icon: ClipboardList, label: "Process DOs" },
   ],
   road_sale: [
-    { path: "/", icon: LayoutDashboard, label: "Dashboard" },
+    { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { path: "/process-do", icon: ClipboardList, label: "Process DOs" },
   ],
   role_creator: [
-    { path: "/", icon: LayoutDashboard, label: "Dashboard" },
+    { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { path: "/user-management", icon: Users, label: "User Management" },
   ],
 };

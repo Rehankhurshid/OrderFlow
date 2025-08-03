@@ -15,6 +15,8 @@ export const departmentEnum = pgEnum("department", [
 export const doStatusEnum = pgEnum("do_status", [
   "created",
   "at_project_office",
+  "received_at_project_office",
+  "dispatched_from_project_office",
   "at_area_office", 
   "at_road_sale",
   "completed",
