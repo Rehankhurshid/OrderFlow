@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Package, Calendar, Building2 } from "lucide-react";
+import { Search, Package, Calendar, Building2, LogIn } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
@@ -78,28 +78,43 @@ export function ConsumerPortalPage() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center space-x-3">
-              <Package className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold text-gray-900">Delivery Order Tracking Portal</h1>
+          <div className="flex justify-between items-center py-4 sm:py-6">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
+                <span className="hidden sm:inline">Delivery Order Tracking Portal</span>
+                <span className="sm:hidden">DO Tracking</span>
+              </h1>
             </div>
-            <Badge variant="outline" className="text-sm">
-              Public Access
-            </Badge>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-1 sm:space-x-2"
+                onClick={() => window.location.href = '/login'}
+              >
+                <LogIn className="h-4 w-4" />
+                <span className="hidden sm:inline">Staff Login</span>
+                <span className="sm:hidden">Login</span>
+              </Button>
+              <Badge variant="outline" className="text-xs sm:text-sm">
+                Public Access
+              </Badge>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Search and Filters */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-lg">Search Delivery Orders</CardTitle>
+            <CardTitle className="text-base sm:text-lg">Search Delivery Orders</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Search by DO Number */}
+            <div className="space-y-4">
+              {/* Search by DO Number - Full width on mobile */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
@@ -110,47 +125,51 @@ export function ConsumerPortalPage() {
                 />
               </div>
 
-              {/* Filter by Party */}
-              <Select value={selectedParty} onValueChange={setSelectedParty}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by Party" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Parties</SelectItem>
-                  {parties.map((party) => (
-                    <SelectItem key={party.id} value={party.partyName}>
-                      {party.partyName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* Filters - 2 columns on mobile, 3 on tablet+ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Filter by Party */}
+                <Select value={selectedParty} onValueChange={setSelectedParty}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Parties" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Parties</SelectItem>
+                    {parties.map((party) => (
+                      <SelectItem key={party.id} value={party.partyName}>
+                        {party.partyName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              {/* Filter by Status */}
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  {Object.entries(statusMap).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {/* Filter by Status */}
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    {Object.entries(statusMap).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              {/* Reset Filters */}
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedParty("all");
-                  setSelectedStatus("all");
-                }}
-              >
-                Reset Filters
-              </Button>
+                {/* Reset Filters */}
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedParty("all");
+                    setSelectedStatus("all");
+                  }}
+                  className="sm:col-span-2 lg:col-span-1"
+                >
+                  Reset Filters
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -159,8 +178,8 @@ export function ConsumerPortalPage() {
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle className="text-lg">Delivery Orders</CardTitle>
-              <Badge variant="secondary">
+              <CardTitle className="text-base sm:text-lg">Delivery Orders</CardTitle>
+              <Badge variant="secondary" className="text-xs sm:text-sm">
                 {filteredOrders.length} {filteredOrders.length === 1 ? 'Order' : 'Orders'}
               </Badge>
             </div>
@@ -175,13 +194,13 @@ export function ConsumerPortalPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>DO Number</TableHead>
-                      <TableHead>Party Name</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Current Location</TableHead>
-                      <TableHead>Valid From</TableHead>
-                      <TableHead>Valid Until</TableHead>
-                      <TableHead>Created On</TableHead>
+                      <TableHead className="text-xs sm:text-sm">DO Number</TableHead>
+                      <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Party Name</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                      <TableHead className="text-xs sm:text-sm hidden md:table-cell">Current Location</TableHead>
+                      <TableHead className="text-xs sm:text-sm hidden lg:table-cell">Valid From</TableHead>
+                      <TableHead className="text-xs sm:text-sm hidden lg:table-cell">Valid Until</TableHead>
+                      <TableHead className="text-xs sm:text-sm hidden md:table-cell">Created On</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -191,19 +210,38 @@ export function ConsumerPortalPage() {
                         className="cursor-pointer hover:bg-gray-50"
                         onClick={() => handleRowClick(order)}
                       >
-                        <TableCell className="font-medium">{order.doNumber}</TableCell>
-                        <TableCell>{order.party.partyName}</TableCell>
-                        <TableCell>
-                          <Badge className={statusColorMap[order.currentStatus]}>
-                            {statusMap[order.currentStatus]}
-                          </Badge>
+                        <TableCell className="font-medium text-xs sm:text-sm">
+                          <div>
+                            {order.doNumber}
+                            <div className="sm:hidden text-xs text-gray-500 mt-1">
+                              {order.party.partyName}
+                            </div>
+                          </div>
                         </TableCell>
-                        <TableCell className="capitalize">
+                        <TableCell className="text-xs sm:text-sm hidden sm:table-cell">
+                          {order.party.partyName}
+                        </TableCell>
+                        <TableCell className="text-xs sm:text-sm">
+                          <Badge className={`${statusColorMap[order.currentStatus]} text-xs`}>
+                            <span className="hidden sm:inline">{statusMap[order.currentStatus]}</span>
+                            <span className="sm:hidden">{statusMap[order.currentStatus].split(' ')[0]}</span>
+                          </Badge>
+                          <div className="md:hidden text-xs text-gray-500 mt-1 capitalize">
+                            {order.currentLocation.replace(/_/g, ' ')}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs sm:text-sm hidden md:table-cell capitalize">
                           {order.currentLocation.replace(/_/g, ' ')}
                         </TableCell>
-                        <TableCell>{format(new Date(order.validFrom), 'dd MMM yyyy')}</TableCell>
-                        <TableCell>{format(new Date(order.validUntil), 'dd MMM yyyy')}</TableCell>
-                        <TableCell>{format(new Date(order.createdAt), 'dd MMM yyyy')}</TableCell>
+                        <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
+                          {format(new Date(order.validFrom), 'dd MMM yyyy')}
+                        </TableCell>
+                        <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
+                          {format(new Date(order.validUntil), 'dd MMM yyyy')}
+                        </TableCell>
+                        <TableCell className="text-xs sm:text-sm hidden md:table-cell">
+                          {format(new Date(order.createdAt), 'dd MMM yyyy')}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
