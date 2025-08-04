@@ -115,74 +115,74 @@ export default function DashboardPage() {
       />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total DOs</p>
+                <p className="text-xs md:text-sm font-medium text-gray-600">Total DOs</p>
                 {statsLoading ? (
-                  <Skeleton className="h-8 w-16 mt-2" />
+                  <Skeleton className="h-6 md:h-8 w-12 md:w-16 mt-1 md:mt-2" />
                 ) : (
-                  <p className="text-2xl font-semibold text-gray-900">{stats?.total || 0}</p>
+                  <p className="text-xl md:text-2xl font-semibold text-gray-900">{stats?.total || 0}</p>
                 )}
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <FileText className="h-6 w-6 text-blue-600" />
+              <div className="hidden sm:flex w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-lg items-center justify-center">
+                <FileText className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">In Progress</p>
+                <p className="text-xs md:text-sm font-medium text-gray-600">In Progress</p>
                 {statsLoading ? (
-                  <Skeleton className="h-8 w-16 mt-2" />
+                  <Skeleton className="h-6 md:h-8 w-12 md:w-16 mt-1 md:mt-2" />
                 ) : (
-                  <p className="text-2xl font-semibold text-gray-900">{stats?.inProgress || 0}</p>
+                  <p className="text-xl md:text-2xl font-semibold text-gray-900">{stats?.inProgress || 0}</p>
                 )}
               </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <Clock className="h-6 w-6 text-yellow-600" />
+              <div className="hidden sm:flex w-10 h-10 md:w-12 md:h-12 bg-yellow-100 rounded-lg items-center justify-center">
+                <Clock className="h-5 w-5 md:h-6 md:w-6 text-yellow-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Completed</p>
+                <p className="text-xs md:text-sm font-medium text-gray-600">Completed</p>
                 {statsLoading ? (
-                  <Skeleton className="h-8 w-16 mt-2" />
+                  <Skeleton className="h-6 md:h-8 w-12 md:w-16 mt-1 md:mt-2" />
                 ) : (
-                  <p className="text-2xl font-semibold text-gray-900">{stats?.completed || 0}</p>
+                  <p className="text-xl md:text-2xl font-semibold text-gray-900">{stats?.completed || 0}</p>
                 )}
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+              <div className="hidden sm:flex w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-lg items-center justify-center">
+                <CheckCircle className="h-5 w-5 md:h-6 md:w-6 text-green-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Pending Action</p>
+                <p className="text-xs md:text-sm font-medium text-gray-600">Pending</p>
                 {statsLoading ? (
-                  <Skeleton className="h-8 w-16 mt-2" />
+                  <Skeleton className="h-6 md:h-8 w-12 md:w-16 mt-1 md:mt-2" />
                 ) : (
-                  <p className="text-2xl font-semibold text-gray-900">{stats?.pending || 0}</p>
+                  <p className="text-xl md:text-2xl font-semibold text-gray-900">{stats?.pending || 0}</p>
                 )}
               </div>
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
+              <div className="hidden sm:flex w-10 h-10 md:w-12 md:h-12 bg-red-100 rounded-lg items-center justify-center">
+                <AlertTriangle className="h-5 w-5 md:h-6 md:w-6 text-red-600" />
               </div>
             </div>
           </CardContent>

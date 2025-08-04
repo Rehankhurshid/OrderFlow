@@ -58,9 +58,9 @@ export default function AuthPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
       {/* Left Column - Forms */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
@@ -148,8 +148,8 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* Right Column - Hero Section */}
-      <div className="flex-1 bg-primary flex items-center justify-center p-8">
+      {/* Right Column - Hero Section (hidden on mobile) */}
+      <div className="hidden lg:flex flex-1 bg-primary items-center justify-center p-8">
         <div className="text-center text-primary-foreground max-w-md">
           <div className="w-24 h-24 bg-primary-foreground/20 rounded-full flex items-center justify-center mx-auto mb-8">
             <Truck className="h-12 w-12" />

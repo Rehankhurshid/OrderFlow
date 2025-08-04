@@ -175,18 +175,19 @@ export default function DoTable({ deliveryOrders, isLoading }: DoTableProps) {
         {pendingOrders.length > 0 && (
           <div>
             <h3 className="text-lg font-semibold mb-2">Pending Orders</h3>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>DO Number</TableHead>
-                    <TableHead>Party Name</TableHead>
-                    <TableHead>Authorized Person</TableHead>
-                    <TableHead>Validity</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
+            <div className="rounded-md border overflow-x-auto">
+              <div className="min-w-[800px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>DO Number</TableHead>
+                      <TableHead>Party Name</TableHead>
+                      <TableHead className="hidden md:table-cell">Authorized Person</TableHead>
+                      <TableHead className="hidden lg:table-cell">Validity</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {pendingOrders.map((do_) => (
                     <TableRow key={do_.id}>
@@ -197,8 +198,8 @@ export default function DoTable({ deliveryOrders, isLoading }: DoTableProps) {
                           <div className="text-sm text-gray-500">Party ID: {do_.party.partyNumber}</div>
                         </div>
                       </TableCell>
-                      <TableCell>{do_.authorizedPerson}</TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">{do_.authorizedPerson}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {new Date(do_.validUntil).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
@@ -311,6 +312,7 @@ export default function DoTable({ deliveryOrders, isLoading }: DoTableProps) {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
           </div>
         )}
@@ -319,18 +321,19 @@ export default function DoTable({ deliveryOrders, isLoading }: DoTableProps) {
         {receivedOrders.length > 0 && (
           <div>
             <h3 className="text-lg font-semibold mb-2">Received Orders (Pending Dispatch)</h3>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>DO Number</TableHead>
-                    <TableHead>Party Name</TableHead>
-                    <TableHead>Authorized Person</TableHead>
-                    <TableHead>Validity</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
+            <div className="rounded-md border overflow-x-auto">
+              <div className="min-w-[800px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>DO Number</TableHead>
+                      <TableHead>Party Name</TableHead>
+                      <TableHead className="hidden md:table-cell">Authorized Person</TableHead>
+                      <TableHead className="hidden lg:table-cell">Validity</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {receivedOrders.map((do_) => (
                     <TableRow key={do_.id}>
@@ -341,8 +344,8 @@ export default function DoTable({ deliveryOrders, isLoading }: DoTableProps) {
                           <div className="text-sm text-gray-500">Party ID: {do_.party.partyNumber}</div>
                         </div>
                       </TableCell>
-                      <TableCell>{do_.authorizedPerson}</TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">{do_.authorizedPerson}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {new Date(do_.validUntil).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
@@ -424,6 +427,7 @@ export default function DoTable({ deliveryOrders, isLoading }: DoTableProps) {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
           </div>
         )}

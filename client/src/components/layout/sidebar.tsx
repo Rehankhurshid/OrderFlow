@@ -59,7 +59,7 @@ export default function Sidebar() {
   const isConsumerPortal = location.startsWith("/search-do");
 
   return (
-    <div className="w-64 bg-white shadow-sm border-r border-gray-200 flex flex-col h-full">
+    <div className="hidden md:flex w-64 bg-white shadow-sm border-r border-gray-200 flex-col h-full">
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">

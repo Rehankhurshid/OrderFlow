@@ -16,13 +16,26 @@ import SetupPasswordPage from "@/pages/setup-password-page";
 import SettingsPage from "@/pages/settings-page";
 import { ConsumerPortalPage } from "@/pages/consumer-portal-page";
 import Sidebar from "@/components/layout/sidebar";
+import MobileSidebar from "@/components/layout/mobile-sidebar";
+import { Truck } from "lucide-react";
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-auto p-6">
+        {/* Mobile Header */}
+        <div className="md:hidden flex items-center justify-between bg-white shadow-sm border-b border-gray-200 px-4 py-3">
+          <MobileSidebar />
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Truck className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <h1 className="text-lg font-semibold text-gray-900">DO System</h1>
+          </div>
+          <div className="w-10" /> {/* Spacer for balance */}
+        </div>
+        <main className="flex-1 overflow-auto p-4 md:p-6">
           {children}
         </main>
       </div>

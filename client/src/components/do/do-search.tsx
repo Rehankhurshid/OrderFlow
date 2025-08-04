@@ -66,22 +66,24 @@ export default function DoSearch() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Search Form */}
       <Card>
-        <CardHeader>
-          <CardTitle>Search Delivery Order</CardTitle>
+        <CardHeader className="px-4 sm:px-6">
+          <CardTitle className="text-lg sm:text-xl">Search Delivery Order</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex space-x-4">
+        <CardContent className="px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
               <Input
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Enter DO Number (e.g., DO-2024-001)"
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                className="w-full"
               />
             </div>
             <Button 
               onClick={handleSearch}
               disabled={searchMutation.isPending || !searchTerm.trim()}
+              className="w-full sm:w-auto"
             >
               <Search className="h-4 w-4 mr-2" />
               {searchMutation.isPending ? "Searching..." : "Search"}
@@ -93,11 +95,11 @@ export default function DoSearch() {
       {/* Search Results */}
       {searchMutation.isError && (
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="px-4 sm:px-6 pt-6">
             <div className="text-center py-8">
               <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Delivery Order Not Found</h3>
-              <p className="text-gray-600">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Delivery Order Not Found</h3>
+              <p className="text-sm sm:text-base text-gray-600">
                 The DO number "{searchTerm}" could not be found. Please check the number and try again.
               </p>
             </div>
@@ -107,16 +109,16 @@ export default function DoSearch() {
 
       {searchResult && (
         <Card>
-          <CardHeader>
-            <CardTitle>Search Results</CardTitle>
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="text-lg sm:text-xl">Search Results</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 sm:px-6">
             {/* DO Details Card */}
-            <div className="border border-gray-200 rounded-lg p-6">
-              <div className="flex items-start justify-between mb-4">
+            <div className="border border-gray-200 rounded-lg p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
                 <div>
-                  <h5 className="text-lg font-semibold text-gray-900">{searchResult.doNumber}</h5>
-                  <p className="text-gray-600">{searchResult.party.partyName} ({searchResult.party.partyNumber})</p>
+                  <h5 className="text-base sm:text-lg font-semibold text-gray-900">{searchResult.doNumber}</h5>
+                  <p className="text-sm sm:text-base text-gray-600">{searchResult.party.partyName} ({searchResult.party.partyNumber})</p>
                 </div>
                 {getCurrentLocationBadge(searchResult.currentLocation)}
               </div>
@@ -160,17 +162,17 @@ export default function DoSearch() {
                 <p className="text-sm font-medium text-gray-700 mb-3">Activity History</p>
                 <div className="space-y-3">
                   {searchResult.workflowHistory.map((history) => (
-                    <div key={history.id} className="flex items-start space-x-3">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                      <div>
-                        <p className="text-sm text-gray-900">
+                    <div key={history.id} className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs sm:text-sm text-gray-900">
                           {history.action.replace(/_/g, ' ')} 
                           {history.fromDepartment && history.toDepartment && 
                             ` from ${history.fromDepartment.replace(/_/g, ' ')} to ${history.toDepartment.replace(/_/g, ' ')}`
                           }
                         </p>
                         <p className="text-xs text-gray-500">
-                          {new Date(history.performedAt).toLocaleString()} • By: {history.performer.username}
+                          {new Date(history.performedAt).toLocaleDateString()} • {history.performer.username}
                         </p>
                         {history.remarks && (
                           <p className="text-xs text-gray-600 mt-1">Remarks: {history.remarks}</p>

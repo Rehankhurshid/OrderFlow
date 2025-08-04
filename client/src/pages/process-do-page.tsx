@@ -55,27 +55,27 @@ export default function ProcessDoPage() {
         />
 
         <Tabs defaultValue="created" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="created" className="flex items-center space-x-2">
-              <span>Created</span>
+          <TabsList className="grid w-full grid-cols-3 md:max-w-[600px]">
+            <TabsTrigger value="created" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+              <span className="text-xs sm:text-sm">Created</span>
               {createdDOs && createdDOs.length > 0 && (
-                <Badge variant="secondary" className="ml-2">
+                <Badge variant="secondary" className="text-xs">
                   {createdDOs.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="received" className="flex items-center space-x-2">
-              <span>Received</span>
+            <TabsTrigger value="received" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+              <span className="text-xs sm:text-sm">Received</span>
               {receivedDOs && receivedDOs.length > 0 && (
-                <Badge variant="secondary" className="ml-2">
+                <Badge variant="secondary" className="text-xs">
                   {receivedDOs.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="forwarded" className="flex items-center space-x-2">
-              <span>Forwarded</span>
+            <TabsTrigger value="forwarded" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+              <span className="text-xs sm:text-sm">Forwarded</span>
               {forwardedDOs && forwardedDOs.length > 0 && (
-                <Badge variant="outline" className="ml-2">
+                <Badge variant="outline" className="text-xs">
                   {forwardedDOs.length}
                 </Badge>
               )}
@@ -84,14 +84,14 @@ export default function ProcessDoPage() {
 
           <TabsContent value="created" className="space-y-4">
             <div className="bg-white rounded-lg shadow-sm">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">Created Delivery Orders</h3>
-                <p className="text-sm text-gray-600 mt-1">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+                <h3 className="text-base sm:text-lg font-medium text-gray-900">Created Delivery Orders</h3>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">
                   {createdDOs?.length || 0} DOs that were just submitted by Paper Creator
                 </p>
               </div>
               
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <DoTable deliveryOrders={createdDOs || []} isLoading={createdLoading} />
               </div>
             </div>
@@ -99,14 +99,14 @@ export default function ProcessDoPage() {
 
           <TabsContent value="received" className="space-y-4">
             <div className="bg-white rounded-lg shadow-sm">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">Received Delivery Orders</h3>
-                <p className="text-sm text-gray-600 mt-1">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+                <h3 className="text-base sm:text-lg font-medium text-gray-900">Received Delivery Orders</h3>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">
                   {receivedDOs?.length || 0} DOs marked as received and ready to dispatch
                 </p>
               </div>
               
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <DoTable deliveryOrders={receivedDOs || []} isLoading={receivedLoading} />
               </div>
             </div>
@@ -114,14 +114,14 @@ export default function ProcessDoPage() {
 
           <TabsContent value="forwarded" className="space-y-4">
             <div className="bg-white rounded-lg shadow-sm">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">Forwarded Delivery Orders</h3>
-                <p className="text-sm text-gray-600 mt-1">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+                <h3 className="text-base sm:text-lg font-medium text-gray-900">Forwarded Delivery Orders</h3>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">
                   {forwardedDOs?.length || 0} DOs that have been dispatched to Area Office
                 </p>
               </div>
               
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {!forwardedLoading && forwardedDOs?.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <p>No forwarded delivery orders yet</p>
@@ -147,18 +147,18 @@ export default function ProcessDoPage() {
 
       <Tabs defaultValue="current" className="space-y-4">
         <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
-          <TabsTrigger value="current" className="flex items-center space-x-2">
-            <span>Current</span>
+          <TabsTrigger value="current" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+            <span className="text-xs sm:text-sm">Current</span>
             {currentOrders && currentOrders.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
+              <Badge variant="secondary" className="text-xs">
                 {currentOrders.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="processed" className="flex items-center space-x-2">
-            <span>Processed</span>
+          <TabsTrigger value="processed" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+            <span className="text-xs sm:text-sm">Processed</span>
             {processedOrders && processedOrders.length > 0 && (
-              <Badge variant="outline" className="ml-2">
+              <Badge variant="outline" className="text-xs">
                 {processedOrders.length}
               </Badge>
             )}
@@ -167,14 +167,14 @@ export default function ProcessDoPage() {
 
         <TabsContent value="current" className="space-y-4">
           <div className="bg-white rounded-lg shadow-sm">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Current Delivery Orders</h3>
-              <p className="text-sm text-gray-600 mt-1">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Current Delivery Orders</h3>
+              <p className="text-xs sm:text-sm text-gray-600 mt-1">
                 {currentOrders?.length || 0} DOs waiting for your action
               </p>
             </div>
             
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <DoTable deliveryOrders={currentOrders || []} isLoading={isLoadingCurrent} />
             </div>
           </div>
@@ -182,14 +182,14 @@ export default function ProcessDoPage() {
 
         <TabsContent value="processed" className="space-y-4">
           <div className="bg-white rounded-lg shadow-sm">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Processed Delivery Orders</h3>
-              <p className="text-sm text-gray-600 mt-1">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Processed Delivery Orders</h3>
+              <p className="text-xs sm:text-sm text-gray-600 mt-1">
                 {processedOrders?.length || 0} DOs you have processed/forwarded
               </p>
             </div>
             
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {!isLoadingProcessed && processedOrders?.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <p>No processed delivery orders yet</p>

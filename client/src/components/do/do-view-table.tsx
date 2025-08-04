@@ -66,7 +66,99 @@ export default function DoViewTable({ deliveryOrders, isLoading, showCurrentLoca
 
   return (
     <>
-      <div className="rounded-md border">
+      {/* Mobile view - Cards */}
+      <div className="md:hidden space-y-4">
+        {deliveryOrders.map((do_) => (
+          <div key={do_.id} className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+            <div className="flex justify-between items-start">
+              <div className="space-y-1">
+                <h3 className="font-semibold text-base">{do_.doNumber}</h3>
+                <p className="text-sm text-gray-600">{do_.party.partyName}</p>
+                <p className="text-xs text-gray-500">Party ID: {do_.party.partyNumber}</p>
+              </div>
+              {getStatusBadge(do_.currentStatus)}
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-gray-500">Authorized Person</p>
+                <p className="font-medium">{do_.authorizedPerson}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Valid Until</p>
+                <p className="font-medium">{new Date(do_.validUntil).toLocaleDateString()}</p>
+              </div>
+            </div>
+            
+            {showCurrentLocation && (
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Current Location</p>
+                {getLocationBadge(do_.currentLocation)}
+              </div>
+            )}
+            
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full">
+                  <Eye className="h-4 w-4 mr-1" />
+                  View Details
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-[90vw] sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-base sm:text-lg">Delivery Order Details</DialogTitle>
+                  <DialogDescription className="text-sm">
+                    {do_.doNumber} - {do_.party.partyName}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+                  <div>
+                    <Label className="font-medium text-sm">Party Name</Label>
+                    <p className="text-sm">{do_.party.partyName} ({do_.party.partyNumber})</p>
+                  </div>
+                  <div>
+                    <Label className="font-medium text-sm">Authorized Person</Label>
+                    <p className="text-sm">{do_.authorizedPerson}</p>
+                  </div>
+                  <div>
+                    <Label className="font-medium text-sm">Valid From</Label>
+                    <p className="text-sm">{new Date(do_.validFrom).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <Label className="font-medium text-sm">Valid Until</Label>
+                    <p className="text-sm">{new Date(do_.validUntil).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <Label className="font-medium text-sm">Current Status</Label>
+                    <p className="text-sm">{getStatusBadge(do_.currentStatus)}</p>
+                  </div>
+                  <div>
+                    <Label className="font-medium text-sm">Current Location</Label>
+                    <p className="text-sm">{getLocationBadge(do_.currentLocation)}</p>
+                  </div>
+                  <div>
+                    <Label className="font-medium text-sm">Created By</Label>
+                    <p className="text-sm">{do_.creator.username}</p>
+                  </div>
+                  <div>
+                    <Label className="font-medium text-sm">Created At</Label>
+                    <p className="text-sm">{format(new Date(do_.createdAt), "PP")}</p>
+                  </div>
+                  {do_.notes && (
+                    <div className="col-span-1 sm:col-span-2">
+                      <Label className="font-medium text-sm">Notes</Label>
+                      <p className="text-sm text-gray-600">{do_.notes}</p>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop view - Table */}
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>

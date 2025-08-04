@@ -122,47 +122,49 @@ export default function WorkflowProgress({ currentStatus, currentLocation }: Wor
   return (
     <div className="mb-6">
       <p className="text-sm font-medium text-gray-700 mb-3">Workflow Progress</p>
-      <div className="flex items-center space-x-4">
-        {workflowSteps.map((step, index) => {
-          const state = getStepState(step.id, step.status);
-          const status = getStepStatus(step.id);
-          
-          return (
-            <div key={step.id} className="flex items-center">
-              <div className="flex flex-col items-center min-w-[100px]">
-                {getStepIcon(state, step.id)}
-                <span 
-                  className={`mt-2 text-sm ${
-                    state === "current" 
-                      ? "text-blue-900 font-medium" 
-                      : state === "completed"
-                      ? "text-green-900"
-                      : state === "rejected"
-                      ? "text-red-900" 
-                      : "text-gray-500"
-                  }`}
-                >
-                  {step.label}
-                </span>
-                {status && (
-                  <span className={`text-xs mt-1 ${
-                    status === "Done" ? "text-green-600 font-medium" :
-                    status === "In Process" || status === "In Progress" ? "text-blue-600 font-medium" :
-                    status === "Final Destination" ? "text-purple-600 font-medium" :
-                    status === "Pending" ? "text-gray-500" :
-                    "text-gray-600"
-                  }`}>
-                    {status}
+      <div className="overflow-x-auto pb-2">
+        <div className="flex items-center space-x-4 min-w-max">
+          {workflowSteps.map((step, index) => {
+            const state = getStepState(step.id, step.status);
+            const status = getStepStatus(step.id);
+            
+            return (
+              <div key={step.id} className="flex items-center">
+                <div className="flex flex-col items-center min-w-[80px] sm:min-w-[100px]">
+                  {getStepIcon(state, step.id)}
+                  <span 
+                    className={`mt-2 text-xs sm:text-sm text-center ${
+                      state === "current" 
+                        ? "text-blue-900 font-medium" 
+                        : state === "completed"
+                        ? "text-green-900"
+                        : state === "rejected"
+                        ? "text-red-900" 
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {step.label}
                   </span>
+                  {status && (
+                    <span className={`text-xs mt-1 ${
+                      status === "Done" ? "text-green-600 font-medium" :
+                      status === "In Process" || status === "In Progress" ? "text-blue-600 font-medium" :
+                      status === "Final Destination" ? "text-purple-600 font-medium" :
+                      status === "Pending" ? "text-gray-500" :
+                      "text-gray-600"
+                    }`}>
+                      {status}
+                    </span>
+                  )}
+                </div>
+                
+                {index < workflowSteps.length - 1 && (
+                  <div className={`w-8 h-0.5 mx-2 sm:mx-4 ${getConnectorColor(index)}`}></div>
                 )}
               </div>
-              
-              {index < workflowSteps.length - 1 && (
-                <div className={`w-8 h-0.5 mx-4 ${getConnectorColor(index)}`}></div>
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

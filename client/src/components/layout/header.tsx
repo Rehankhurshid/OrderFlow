@@ -19,22 +19,22 @@ export default function Header({ title, subtitle }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-      <div className="flex items-center justify-between">
+    <header className="bg-white shadow-sm border-b border-gray-200 px-4 md:px-6 py-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+          <h2 className="text-lg md:text-xl font-semibold text-gray-900">{title}</h2>
           <p className="text-sm text-gray-600 mt-1">{subtitle}</p>
         </div>
         
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-between md:space-x-4">
           {/* System Status */}
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-            <span className="text-sm text-gray-600">System Online</span>
+            <span className="text-xs md:text-sm text-gray-600">System Online</span>
           </div>
           
-          {/* User Info */}
-          <div className="flex items-center space-x-3">
+          {/* User Info - Hidden on mobile as it's in the mobile sidebar */}
+          <div className="hidden md:flex items-center space-x-3">
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
               <span className="text-primary-foreground text-sm font-medium">
                 {user.username.charAt(0).toUpperCase()}

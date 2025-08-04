@@ -81,13 +81,13 @@ export default function CreateDoForm() {
 
   return (
     <Card className="max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>Create New Delivery Order</CardTitle>
-        <p className="text-sm text-gray-600">
+      <CardHeader className="px-4 sm:px-6">
+        <CardTitle className="text-lg sm:text-xl">Create New Delivery Order</CardTitle>
+        <p className="text-xs sm:text-sm text-gray-600 mt-1">
           Fill out the form below to create a new delivery order. It will be automatically submitted to the Project Office for review.
         </p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 sm:px-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -202,21 +202,23 @@ export default function CreateDoForm() {
               </div>
             </div>
 
-            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 border-t border-gray-200">
               <Button 
                 type="button" 
                 variant="outline"
                 onClick={() => form.reset()}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={createDoMutation.isPending}
+                className="w-full sm:w-auto"
               >
                 {createDoMutation.isPending 
                   ? "Creating..." 
-                  : "Create & Submit to Project Office"
+                  : "Create & Submit"
                 }
               </Button>
             </div>
