@@ -37,6 +37,9 @@ export interface IStorage {
   
   getAllParties(): Promise<Party[]>;
   createParty(party: InsertParty): Promise<Party>;
+  getParty(id: string): Promise<Party | undefined>;
+  updateParty(id: string, partyName: string): Promise<void>;
+  deleteParty(id: string): Promise<void>;
   
   createDeliveryOrder(deliveryOrder: InsertDeliveryOrder & { createdBy: string }): Promise<DeliveryOrder>;
   getDeliveryOrdersByDepartment(department: string): Promise<DeliveryOrderWithParty[]>;
@@ -122,6 +125,19 @@ export class DatabaseStorage implements IStorage {
       .values(insertParty)
       .returning();
     return party;
+  }
+
+  async getParty(id: string): Promise<Party | undefined> {
+    const [party] = await db.select().from(parties).where(eq(parties.id, id));
+    return party || undefined;
+  }
+
+  async updateParty(id: string, partyName: string): Promise<void> {
+    await db.update(parties).set({ partyName }).where(eq(parties.id, id));
+  }
+
+  async deleteParty(id: string): Promise<void> {
+    await db.delete(parties).where(eq(parties.id, id));
   }
 
   async createDeliveryOrder(deliveryOrderData: InsertDeliveryOrder & { createdBy: string, doNumber: string }): Promise<DeliveryOrder> {

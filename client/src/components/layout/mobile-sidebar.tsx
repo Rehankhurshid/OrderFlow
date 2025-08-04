@@ -18,7 +18,8 @@ import {
   Users, 
   LogOut,
   Settings,
-  Menu
+  Menu,
+  Building2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +51,7 @@ const navigationItems = {
   role_creator: [
     { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { path: "/user-management", icon: Users, label: "User Management" },
+    { path: "/party-management", icon: Building2, label: "Party Management" },
   ],
 };
 

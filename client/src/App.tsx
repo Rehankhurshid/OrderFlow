@@ -15,6 +15,7 @@ import UserManagementPage from "@/pages/user-management-page";
 import SetupPasswordPage from "@/pages/setup-password-page";
 import SettingsPage from "@/pages/settings-page";
 import { ConsumerPortalPage } from "@/pages/consumer-portal-page";
+import { PartyManagementPage } from "@/pages/party-management-page";
 import Sidebar from "@/components/layout/sidebar";
 import MobileSidebar from "@/components/layout/mobile-sidebar";
 import { Truck } from "lucide-react";
@@ -77,6 +78,12 @@ function Router() {
       <ProtectedRoute path="/user-management" component={() => (
         <AppLayout>
           <UserManagementPage />
+        </AppLayout>
+      )} />
+      
+      <ProtectedRoute path="/party-management" component={() => (
+        <AppLayout>
+          <PartyManagementPage />
         </AppLayout>
       )} />
       

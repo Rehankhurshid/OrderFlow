@@ -49,6 +49,56 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.patch("/api/parties/:id", requireAuth, requireDepartment(["role_creator"]), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { partyName } = req.body;
+      
+      const partySchema = z.object({
+        partyName: z.string().min(1, "Party name is required")
+      });
+      
+      const validatedData = partySchema.parse({ partyName });
+      
+      // Check if party exists
+      const party = await storage.getParty(id);
+      if (!party) {
+        return res.status(404).json({ message: "Party not found" });
+      }
+      
+      await storage.updateParty(id, validatedData.partyName);
+      res.json({ message: "Party name updated successfully" });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/parties/:id", requireAuth, requireDepartment(["role_creator"]), async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Check if party exists
+      const party = await storage.getParty(id);
+      if (!party) {
+        return res.status(404).json({ message: "Party not found" });
+      }
+      
+      await storage.deleteParty(id);
+      res.json({ message: "Party deleted successfully" });
+    } catch (error: any) {
+      console.error("Delete party error:", error);
+      
+      // Check if it's a foreign key constraint error
+      if (error.message?.includes("foreign key") || error.code === "23503") {
+        return res.status(400).json({ 
+          message: "Cannot delete party. This party has associated delivery orders. Please delete the delivery orders first or archive the party instead." 
+        });
+      }
+      
+      res.status(400).json({ message: error.message || "Failed to delete party" });
+    }
+  });
+
   // Public API endpoints for portal
   app.get("/api/public/delivery-orders", async (req, res) => {
     try {
